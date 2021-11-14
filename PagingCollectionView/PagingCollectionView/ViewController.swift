@@ -23,14 +23,29 @@ class ViewController: UIViewController {
         return collectionView
     }()
     
+    private var prevIndexPathAtCenter: IndexPath?
+    private var currentIndexPath: IndexPath? {
+        let center = view.convert(collectionView.center, to: collectionView)
+        return collectionView.indexPathForItem(at: center)
+    }
+    
     private let colors: [UIColor] = [.systemPink, .systemTeal, .systemGray]
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+
         view.backgroundColor = .systemBackground
         
         initView()
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        if let currentIndexPath = currentIndexPath {
+            prevIndexPathAtCenter = currentIndexPath
+        }
+        collectionView.collectionViewLayout.invalidateLayout()
     }
     
     private func initView() {
@@ -57,6 +72,7 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource, 
             return UICollectionViewCell()
         }
         
+        cell.indexPath = indexPath
         cell.backgroundColor = colors[indexPath.row]
         return cell
     }
@@ -75,5 +91,15 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource, 
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
         return 0
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, targetContentOffsetForProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+        guard let oldCenter = prevIndexPathAtCenter else {
+            return proposedContentOffset
+        }
+        
+        let attrs = collectionView.layoutAttributesForItem(at: oldCenter)
+        let newOriginForOldIndex = attrs?.frame.origin
+        return newOriginForOldIndex ?? proposedContentOffset
     }
 }
